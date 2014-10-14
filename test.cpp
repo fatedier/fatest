@@ -3,6 +3,7 @@ using namespace std;
 
 int main()
 {
-    cout << "est!" << endl;
+    cout << "test!" << endl;
+    cout << "new" << endl;
     return 0;
 }
