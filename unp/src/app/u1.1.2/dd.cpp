@@ -5,6 +5,7 @@
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <errno.h>
 
 #define MAXLINE 1024
 
@@ -29,7 +30,7 @@ int main(int argc, char **argv)
     
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(9999);
+    servaddr.sin_port = htons(13);
 
     if (inet_pton(AF_INET, argv[1], &servaddr.sin_addr) <= 0)
     {
@@ -40,11 +41,14 @@ int main(int argc, char **argv)
     if (connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0)
     {
         printf("connect error\n");
+        printf("%d\n", errno);
         return 1;
     }
 
+    int count = 0;
     while ((n = read(sockfd, recvline, MAXLINE)) > 0)
     {
+        count++;
         recvline[n] = 0;
         if (fputs(recvline, stdout) == EOF)
         {
@@ -58,6 +62,6 @@ int main(int argc, char **argv)
         printf("read error\n");
         return 1;
     }
-
+    printf("%d\n", count);
     return 0;
 }

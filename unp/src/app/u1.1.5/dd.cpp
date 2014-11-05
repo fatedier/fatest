@@ -26,7 +26,7 @@ int main(int argc, char **argv)
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servaddr.sin_port = htons(9999);
+    servaddr.sin_port = htons(13);
 
     if (bind(listenfd, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0)
     {
@@ -50,10 +50,16 @@ int main(int argc, char **argv)
         }
         ticks = time(NULL);
         snprintf(buff, sizeof(buff), "%.24s\r\n", ctime(&ticks));
-        if (write(connfd, buff, strlen(buff)) < 0)
+
+        for (int i=0; i<strlen(buff); i++)
         {
-            printf("write error\n");
+            if (write(connfd, &buff[i], 1) < 0)
+            {
+                printf("write error\n");
+            }
+
         }
+
         if (close(connfd) < 0)
         {
             printf("close error\n");
