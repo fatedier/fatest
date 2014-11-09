@@ -40,7 +40,6 @@ int main(int argc, char **argv)
         printf("listen error\n");
         return 1;
     }
-    
 
     struct sockaddr_in cli_addr;
     socklen_t cli_len = sizeof(cli_addr);
@@ -49,7 +48,7 @@ int main(int argc, char **argv)
         connfd = accept(listenfd, (struct sockaddr *) &cli_addr, &cli_len);
         if (connfd < 0)
         {
-            printf("accept error\n");
+            printf("accept error,%s\n", strerror(errno));
             return 1;
         }
 

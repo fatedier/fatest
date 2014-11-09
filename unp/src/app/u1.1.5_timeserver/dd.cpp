@@ -33,13 +33,13 @@ int main(int argc, char **argv)
         printf("bind error\n");
         return 1;
     }
-
+    
     if (listen(listenfd, 50) < 0)
     {
         printf("listen error\n");
         return 1;
-    }
-    
+    } 
+
     for(;;)
     {
         connfd = accept(listenfd, (struct sockaddr *) NULL, NULL);
