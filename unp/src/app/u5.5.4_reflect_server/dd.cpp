@@ -4,9 +4,22 @@
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
+#include <sys/wait.h>
 
 #define MAXLINE 1024
 
+//清除变成僵尸进程的子进程
+void clean_child(int signo)
+{
+    pid_t pid;
+    int stat;
+    pid = wait(&stat);
+    printf("child %d terminated\n", pid);
+    return;
+}
+
+//处理连接的具体事务
 void deal_socket(int sockfd)
 {
     char buf[MAXLINE];
@@ -24,6 +37,9 @@ again:
 
 int main()
 {
+    //绑定SIGCHLD信号的处理函数
+    signal(SIGCHLD, clean_child);
+
     int listenfd, confd;
 
     struct sockaddr_in svaddr;
@@ -53,18 +69,23 @@ int main()
     len = sizeof(cliaddr);
     for (;;) {
         confd = accept(listenfd, (struct sockaddr *)&cliaddr, &len);
-        if (confd < 0) {
+        //如果阻塞过程中被信号中断，某些系统可能会返回一个EINTR错误而不是重启accept
+        if (confd < 0 && errno == EINTR) {
+            continue;
+        } else if (confd < 0) {
             printf("accept error,%s\n", strerror(errno));
             return 0;
         }
 
         pid = fork();
+        //子进程
         if (pid == 0) {
             close(listenfd);
             deal_socket(confd);
             close(confd);
             return 0;
         } else if (pid > 0) {
+        //父进程
             close(confd);
         } else {
             printf("fork error\n");
