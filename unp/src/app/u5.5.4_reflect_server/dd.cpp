@@ -12,14 +12,14 @@ void deal_socket(int sockfd)
     char buf[MAXLINE];
     int n;
 again:
-    while (n = read(sockfd, buf, MAXLINE) > 0) {
+    while ((n = read(sockfd, buf, MAXLINE)) > 0) {
         write(sockfd, buf, n);
     }
 
     if (n < 0 && errno == EINTR)
         goto again;
     else if (n < 0)
-        printf("read error");
+        printf("read error\n");
 }
 
 int main()
