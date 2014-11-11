@@ -6,28 +6,56 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <signal.h>
+#include <sys/select.h>
 
 #define MAXLINE 1024
+
+int max(int a, int b)
+{
+    return a>b?a:b;
+}
 
 //socket连接具体事务处理
 void send_str(int sockfd)
 {
+    //最大描述符加1
+    int maxfdp1;
+    fd_set rset;
     char sendline[MAXLINE], recvline[MAXLINE];
-    while (fgets(sendline, sizeof(sendline), stdin) != NULL) {
-        write(sockfd, sendline, strlen(sendline));
-        //如果之前服务器主动关闭了连接，客户端阻塞在fgets的文件描述符上，还没向对方发送FIN
-        //这时候再发送数据会收到一个RST，再次发送的话就会接收到一个SIGPIPE信号并终止
-        //这里忽略该信号，并根据errno来判断
-        if (errno == EPIPE) {
-            printf("socket is closed,can not send this msg\n");
-            return;
+
+    FD_ZERO(&rset);
+    for (;;) {
+        FD_SET(fileno(stdin), &rset);
+        FD_SET(sockfd, &rset);
+        maxfdp1 = max(fileno(stdin), sockfd) + 1;
+        select(maxfdp1, &rset, NULL, NULL, NULL);
+        
+        if (FD_ISSET(fileno(stdin), &rset)) {
+            if (fgets(sendline, sizeof(sendline), stdin) != NULL) {
+                write(sockfd, sendline, strlen(sendline));
+                //如果之前服务器主动关闭了连接，客户端阻塞在fgets的文件描述符上，还没向对方发送FIN
+                //这时候再发送数据会收到一个RST，再次发送的话就会接收到一个SIGPIPE信号并终止
+                //这里忽略该信号，并根据errno来判断
+                if (errno == EPIPE) {
+                    printf("socket is closed,can not send this msg\n");
+                }
+            } else {
+                return;
+            }
         }
-        if (read(sockfd, recvline, MAXLINE) < 0) {
-            printf("read error\n");
-            return;
+
+        if (FD_ISSET(sockfd, &rset)) {
+            int n = read(sockfd, recvline, MAXLINE);
+            if (n < 0) {
+                printf("read error\n");
+                return;
+            } else if (n == 0) {
+                printf("the socket is closed\n");
+                return;
+            }
+            fputs(recvline, stdout);
+            memset(&recvline, 0 , sizeof(recvline));  
         }
-        fputs(recvline, stdout);
-        memset(&recvline, 0 , sizeof(recvline));
     }
 }
 
