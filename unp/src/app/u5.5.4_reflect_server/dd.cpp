@@ -14,8 +14,9 @@ void clean_child(int signo)
 {
     pid_t pid;
     int stat;
-    pid = wait(&stat);
-    printf("child %d terminated\n", pid);
+    while ((pid = waitpid(-1, &stat, WNOHANG)) > 0) {
+        printf("child %d terminated\n", pid);
+    }
     return;
 }
 
@@ -24,8 +25,14 @@ void deal_socket(int sockfd)
 {
     char buf[MAXLINE];
     int n;
+    long arg1,arg2;
 again:
     while ((n = read(sockfd, buf, MAXLINE)) > 0) {
+        if (sscanf(buf, "%ld%ld", &arg1, &arg2) == 2)
+            snprintf(buf, sizeof(buf), "%ld\n", arg1 + arg2);
+        else
+            snprintf(buf, sizeof(buf), "input error\n");
+        n = strlen(buf);
         write(sockfd, buf, n);
     }
 
