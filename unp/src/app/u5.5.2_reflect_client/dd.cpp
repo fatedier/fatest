@@ -20,38 +20,47 @@ void send_str(int sockfd)
 {
     //最大描述符加1
     int maxfdp1;
+    //控制是否已经读取到文件末尾，为0的时候才检查标准输入的可读性
+    int io_flag = 0;
+    //select集合
     fd_set rset;
     char sendline[MAXLINE], recvline[MAXLINE];
 
     FD_ZERO(&rset);
     for (;;) {
-        FD_SET(fileno(stdin), &rset);
+        if (io_flag == 0) {
+            FD_SET(fileno(stdin), &rset);
+        }
         FD_SET(sockfd, &rset);
         maxfdp1 = max(fileno(stdin), sockfd) + 1;
         select(maxfdp1, &rset, NULL, NULL, NULL);
         
+        //标准输入描述符处于可读状态
         if (FD_ISSET(fileno(stdin), &rset)) {
-            if (fgets(sendline, sizeof(sendline), stdin) != NULL) {
-                write(sockfd, sendline, strlen(sendline));
-                //如果之前服务器主动关闭了连接，客户端阻塞在fgets的文件描述符上，还没向对方发送FIN
-                //这时候再发送数据会收到一个RST，再次发送的话就会接收到一个SIGPIPE信号并终止
-                //这里忽略该信号，并根据errno来判断
-                if (errno == EPIPE) {
-                    printf("socket is closed,can not send this msg\n");
-                }
+            if (fgets(sendline, MAXLINE, stdin) == NULL) {
+                io_flag = 1;
+                shutdown(sockfd, SHUT_WR);
+                FD_CLR(fileno(stdin), &rset);
+                continue;
             } else {
-                return;
+                write(sockfd, sendline, strlen(sendline));
             }
         }
 
+        //socket描述符处于可读状态
         if (FD_ISSET(sockfd, &rset)) {
             int n = read(sockfd, recvline, MAXLINE);
             if (n < 0) {
                 printf("read error\n");
                 return;
             } else if (n == 0) {
-                printf("the socket is closed\n");
-                return;
+                //收到FIN信号，如果之前标准输入已经读取结束了，正常关闭，否则说明出错
+                if (io_flag == 1) {
+                    return;
+                } else {
+                    printf("the socket is closed\n");
+                    return;
+                }
             }
             fputs(recvline, stdout);
             memset(&recvline, 0 , sizeof(recvline));  
