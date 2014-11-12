@@ -73,9 +73,9 @@ int main()
     //不响应信号SIGPIPE
     signal(SIGPIPE, SIG_IGN);
 
-    int confd[1];
+    int confd[1000];
 
-    for (int i=0; i<1; i++) {
+    for (int i=0; i<1000; i++) {
         confd[i] = socket(AF_INET, SOCK_STREAM, 0);
         if (confd[i] < 0) {
             printf("create error,%s\n", strerror(errno));
