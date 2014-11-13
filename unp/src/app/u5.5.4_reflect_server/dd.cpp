@@ -101,7 +101,7 @@ int main()
                 printf("accept error,%s\n", strerror(errno));
                 return 0;
             }
-            printf("accept sockfd:%d\n", confd);
+            printf("accept sockfd:%d allnumber:%d\n", confd, nUserful + 1);
             //将接收到的套接字描述符加入到client数组中，第一个<0的位置
             int i;
             for (i=0; i<FD_SETSIZE; i++) {
@@ -131,19 +131,20 @@ int main()
             if (client[i] >= 0) {
                 nDeal++;
                 if (FD_ISSET(client[i], &rset)) {
-                    printf("sockfd [%d] is already\n", client[i]);
+                    //printf("sockfd [%d] is already\n", client[i]);
                     int n;
                     //read返回0的时候，表示对方已经关闭连接
                     if ((n = read(client[i], buf, MAXLINE)) == 0) {
-                        printf("remote socket is closed");
+                        printf("remote socket is closed\n");
                         close(client[i]);
                         FD_CLR(client[i], &allset);
                         client[i] = -1;
                         nUserful--;
                     } else if (n < 0) {
                         //返回小于0表示发生错误
-                        printf("connection:%d read error", client[i]);
+                        printf("connection:%d read error\n", client[i]);
                     } else {
+                        //printf("%s\n", buf);
                         write(client[i], buf, n);
                     }
                     //处理完这条，如果没有其他文件描述符就绪，直接跳过
