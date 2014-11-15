@@ -20,7 +20,7 @@ def deal_cli():
     while True:
         s.sendall(msg)
         reply = s.recv(1024)
-        time.sleep(1)
+        time.sleep(0.1)
 
 n = 0
 while n < 999:

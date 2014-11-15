@@ -27,6 +27,7 @@
 *.exe
 *.out
 *.app
+dd
 
 # dir
 dep/
