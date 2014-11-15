@@ -21,28 +21,6 @@ void clean_child(int signo)
     return;
 }
 
-//处理连接的具体事务
-void deal_socket(int sockfd)
-{
-    char buf[MAXLINE];
-    int n;
-    long arg1,arg2;
-again:
-    while ((n = read(sockfd, buf, MAXLINE)) > 0) {
-        if (sscanf(buf, "%ld%ld", &arg1, &arg2) == 2)
-            snprintf(buf, sizeof(buf), "%ld\n", arg1 + arg2);
-        else
-            snprintf(buf, sizeof(buf), "input error\n");
-        n = strlen(buf);
-        write(sockfd, buf, n);
-    }
-
-    if (n < 0 && errno == EINTR)
-        goto again;
-    else if (n < 0)
-        printf("read error\n");
-}
-
 int main()
 {
     //绑定SIGCHLD信号的处理函数
@@ -126,7 +104,7 @@ int main()
                 continue;
         }
 
-        int nDeal = 0;  //用来计数已经读了多少个有效连接，配合nUserful使用
+        int nDeal = 0;  //用来计数已经处理了多少个有效连接，配合nUserful使用
         for (int i=0; i<FD_SETSIZE; i++) {
             if (client[i] >= 0) {
                 nDeal++;
