@@ -9,7 +9,8 @@ import threading
 def deal_cli():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    sv_ip = '127.0.0.1'
+    #sv_ip = '127.0.0.1'
+    sv_ip = '10.32.146.9'
     port = 9999
 
     s.connect((sv_ip, port))
@@ -18,8 +19,11 @@ def deal_cli():
     msg = msg * 100
     
     while True:
-        s.sendall(msg)
-        reply = s.recv(1024)
+        try:
+            s.sendall(msg)
+            reply = s.recv(1024)
+        except:
+            break
         time.sleep(0.1)
 
 n = 0

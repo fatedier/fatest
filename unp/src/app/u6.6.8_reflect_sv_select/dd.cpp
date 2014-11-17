@@ -121,6 +121,10 @@ int main()
                     } else if (n < 0) {
                         //返回小于0表示发生错误
                         printf("connection:%d read error\n", client[i]);
+                        close(client[i]);
+                        FD_CLR(client[i], &allset);
+                        client[i] = -1;
+                        nUserful--;
                     } else {
                         //printf("%s\n", buf);
                         write(client[i], buf, n);

@@ -10,6 +10,9 @@
 
 #define MAXLINE 1024
 
+char ip[] = "127.0.0.1";
+int port = 9999;
+
 int max(int a, int b)
 {
     return a>b?a:b;
@@ -85,8 +88,8 @@ int main()
         struct sockaddr_in cliaddr;
         memset(&cliaddr, 0, sizeof(cliaddr));
         cliaddr.sin_family = AF_INET;
-        cliaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-        cliaddr.sin_port = htons(9999);
+        cliaddr.sin_addr.s_addr = inet_addr(ip);
+        cliaddr.sin_port = htons(port);
 
         if (connect(confd[i], (struct sockaddr *)&cliaddr, sizeof(cliaddr)) < 0) {
             printf("connect error,%s\n", strerror(errno));
