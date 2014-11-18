@@ -40,6 +40,12 @@ int main()
         return 0;
     }
     
+    int reuse = 1;
+    if (setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) {
+        printf("setsockopt error,%s\n", strerror(errno));
+        return 0;
+    }
+
     if (bind(listenfd, (struct sockaddr *)&svaddr, sizeof(svaddr)) < 0) {
         printf("bind error,%s\n", strerror(errno));
         return 0;
