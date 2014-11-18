@@ -10,7 +10,9 @@
 #include <arpa/inet.h>
 
 #define MAXLINE 1024
-#define MAXCLIENT 3000
+#define MAXCLIENT 1024
+
+int needPrint = 0;
 
 int main()
 {
@@ -62,10 +64,12 @@ int main()
             if (confd < 0) {
                 printf("accept error,%s\n", strerror(errno));
             } else {
-                printf("accept sockfd:%d allnumber:%d\n", confd, nFdUse + 1);
+                if (needPrint)
+                    printf("accept sockfd:%d allnumber:%d\n", confd, nFdUse + 1);
 
                 if (nFdUse + 1 > MAXCLIENT) {
-                    printf("too many clients!!!\n");
+                    if (needPrint)
+                        printf("too many clients!!!\n");
                     close(confd);
                 } else {
                     for (int i=0; i<MAXCLIENT; i++) {
@@ -96,7 +100,8 @@ int main()
                     nFdUse--;
 
                 } else if (n == 0) {
-                    printf("remote socket is closed\n");
+                    if (needPrint)
+                        printf("remote socket is closed\n");
                     close(client[i].fd);
                     client[i].fd = -1;
                     nFdUse--;

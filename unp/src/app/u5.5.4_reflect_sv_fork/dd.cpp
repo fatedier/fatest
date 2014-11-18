@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include <arpa/inet.h>
 
 #define MAXLINE 1024
 
@@ -44,7 +45,7 @@ int main()
 
     struct sockaddr_in svaddr;
     svaddr.sin_family = AF_INET;
-    svaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    svaddr.sin_addr.s_addr = inet_addr("192.168.131.128");
     svaddr.sin_port = htons(9999);
 
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
