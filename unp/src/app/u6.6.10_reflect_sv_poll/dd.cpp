@@ -12,7 +12,10 @@
 #define MAXLINE 1024
 #define MAXCLIENT 1024
 
-int needPrint = 0;
+char ip[] = "0.0.0.0";
+int port = 9999;
+
+int needPrint = 1;
 
 int main()
 {
@@ -21,8 +24,8 @@ int main()
     struct sockaddr_in svaddr;
     memset(&svaddr, 0, sizeof(svaddr));
     svaddr.sin_family = AF_INET;
-    svaddr.sin_addr.s_addr = inet_addr("192.168.131.128");
-    svaddr.sin_port = htons(9999);
+    svaddr.sin_addr.s_addr = inet_addr(ip);
+    svaddr.sin_port = htons(port);
 
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
     if (listenfd < 0) {

@@ -25,15 +25,13 @@ def deal_cli():
             reply = s.recv(1024)
         except:
             break
-        time.sleep(0.1)
-try:
-    n = 0
-    while n < 999:
-        t = threading.Thread(target=deal_cli)
-        t.start()
-        n += 1
+        time.sleep(0.5)
+    
+n = 0
+while n < 1000:
+    t = threading.Thread(target=deal_cli)
+    t.start()
+    n += 1
 
-    deal_cli()
-except:
-    print('over')
-    sys.exit(-1)
+while True:
+    time.sleep(5)

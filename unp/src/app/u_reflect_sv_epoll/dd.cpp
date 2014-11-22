@@ -8,6 +8,7 @@
 #include <sys/wait.h>
 #include <sys/epoll.h>
 #include <arpa/inet.h>
+#include <malloc.h>
 
 #define MAXLINE 1024
 #define MAXCLIENT 5000
@@ -16,6 +17,13 @@ char ip[] = "0.0.0.0";
 int port = 9999;
 
 int needPrint = 1;
+
+struct my_epoll_data_t
+{
+    char data[MAXLINE];
+    int len;
+    int fd;
+};
 
 int main()
 {
@@ -106,8 +114,24 @@ int main()
                     nFdUse--;
                 }
                 else {
-                    write(events[i].data.fd, buf, n);
+                    //将该套接字改为监听可写状态
+                    struct my_epoll_data_t *md;
+                    md = (struct my_epoll_data_t *)malloc(sizeof(struct my_epoll_data_t));
+                    strncpy(md->data, buf, n);
+                    md->len = n;
+                    md->fd = events[i].data.fd;
+                    event.data.ptr = md;
+                    event.events = EPOLLOUT | EPOLLET;
+                    epoll_ctl(epoll_fd, EPOLL_CTL_MOD, events[i].data.fd, &event);
                 }
+            } else if (events[i].events & EPOLLOUT) {
+                //套接字可写，回射客户端发过来的消息
+                struct my_epoll_data_t *md = (struct my_epoll_data_t *)events[i].data.ptr;
+                write(md->fd, md->data, md->len);
+                event.data.fd = md->fd;
+                event.events = EPOLLIN | EPOLLET;
+                free(md);
+                epoll_ctl(epoll_fd, EPOLL_CTL_MOD, event.data.fd, &event);
             }
         }
     }

@@ -9,6 +9,7 @@
 #include <sys/select.h>
 
 #define MAXLINE 1024
+#define CLIENTNUM 1000
 
 char ip[] = "127.0.0.1";
 int port = 9999;
@@ -76,9 +77,9 @@ int main()
     //不响应信号SIGPIPE
     signal(SIGPIPE, SIG_IGN);
 
-    int confd[5];
+    int confd[CLIENTNUM];
 
-    for (int i=0; i<5; i++) {
+    for (int i=0; i<CLIENTNUM; i++) {
         confd[i] = socket(AF_INET, SOCK_STREAM, 0);
         if (confd[i] < 0) {
             printf("create error,%s\n", strerror(errno));
