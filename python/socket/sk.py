@@ -26,12 +26,11 @@ def deal_cli():
         except:
             break
         time.sleep(0.5)
-    
+
 n = 0
-while n < 1000:
+while n < 999:
     t = threading.Thread(target=deal_cli)
     t.start()
     n += 1
 
-while True:
-    time.sleep(5)
+deal_cli()

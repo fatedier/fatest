@@ -10,13 +10,20 @@
 
 #define MAXLINE 1024
 
+char ip[] = "0.0.0.0";
+int port = 9999;
+
+int needprint = 0;
+
 //清除变成僵尸进程的子进程
 void clean_child(int signo)
 {
     pid_t pid;
     int stat;
-    pid = wait(&stat);
-    printf("child %d terminated\n", pid);
+    while ((pid = waitpid(-1, &stat, WNOHANG)) > 0) {
+        if (needprint)
+            printf("child %d terminated\n", pid);
+    }
     return;
 }
 
@@ -45,8 +52,8 @@ int main()
 
     struct sockaddr_in svaddr;
     svaddr.sin_family = AF_INET;
-    svaddr.sin_addr.s_addr = inet_addr("192.168.131.128");
-    svaddr.sin_port = htons(9999);
+    svaddr.sin_addr.s_addr = inet_addr(ip);
+    svaddr.sin_port = htons(port);
 
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
     if (listenfd < 0) {

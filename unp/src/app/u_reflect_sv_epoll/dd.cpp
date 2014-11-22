@@ -17,6 +17,7 @@ char ip[] = "0.0.0.0";
 int port = 9999;
 
 int needPrint = 1;
+int use_et = 0;
 
 struct my_epoll_data_t
 {
@@ -69,7 +70,10 @@ int main()
     struct epoll_event event;
     struct epoll_event events[MAXCLIENT];
     event.data.fd = listenfd;
-    event.events = EPOLLIN | EPOLLET;
+    if (use_et)
+        event.events = EPOLLIN | EPOLLET;
+    else
+        event.events = EPOLLIN;
     epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listenfd, &event);
     for (;;) {
         nReady = epoll_wait(epoll_fd, events, MAXCLIENT, -1);
@@ -90,7 +94,10 @@ int main()
                         close(confd);
                     } else {
                         event.data.fd = confd;
-                        event.events = EPOLLIN | EPOLLET;
+                        if (use_et)
+                            event.events = EPOLLIN | EPOLLET;
+                        else
+                            event.events = EPOLLIN;
                         epoll_ctl(epoll_fd, EPOLL_CTL_ADD, confd, &event);
                         nFdUse++;
                     }
@@ -121,7 +128,10 @@ int main()
                     md->len = n;
                     md->fd = events[i].data.fd;
                     event.data.ptr = md;
-                    event.events = EPOLLOUT | EPOLLET;
+                    if (use_et)
+                        event.events = EPOLLOUT | EPOLLET;
+                    else
+                        event.events = EPOLLOUT;
                     epoll_ctl(epoll_fd, EPOLL_CTL_MOD, events[i].data.fd, &event);
                 }
             } else if (events[i].events & EPOLLOUT) {
@@ -129,7 +139,10 @@ int main()
                 struct my_epoll_data_t *md = (struct my_epoll_data_t *)events[i].data.ptr;
                 write(md->fd, md->data, md->len);
                 event.data.fd = md->fd;
-                event.events = EPOLLIN | EPOLLET;
+                if (use_et)
+                    event.events = EPOLLIN | EPOLLET;
+                else
+                    event.events = EPOLLIN | EPOLLET;
                 free(md);
                 epoll_ctl(epoll_fd, EPOLL_CTL_MOD, event.data.fd, &event);
             }
