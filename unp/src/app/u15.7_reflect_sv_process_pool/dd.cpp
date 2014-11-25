@@ -38,6 +38,74 @@ void clean_child(int signo)
     return;
 }
 
+/* 向指定套接字发送文件描述符 */
+ssize_t write_fd(int fd, void *ptr, size_t nbytes, int sendfd)
+{
+    struct msghdr msg;
+    struct iovec iov[1];
+
+    union {
+        struct cmsghdr cm;
+        char control[CMSG_SPACE(sizeof(int))];
+    } control_un;
+    struct cmsghdr *cmptr;
+
+    msg.msg_control = control_un.control;
+    msg.msg_controllen = sizeof(control_un.control);
+    cmptr = CMSG_FIRSTHDR(&msg);
+    cmptr->cmsg_len = CMSG_LEN(sizeof(int));
+    cmptr->cmsg_level = SOL_SOCKET;
+    cmptr->cmsg_type = SCM_RIGHTS;
+    *((int *)CMSG_DATA(cmptr)) = sendfd;
+
+    msg.msg_name = NULL;
+    msg.msg_namelen = 0;
+
+    iov[0].iov_base = ptr;
+    iov[0].iov_len = nbytes;
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
+
+    return (sendmsg(fd, &msg, 0));
+}
+
+/* 从套接字接收文件描述符 */
+ssize_t read_fd(int fd, void *ptr, size_t nbytes, int *recvfd)
+{
+    struct msghdr msg;
+    struct iovec iov[1];
+    ssize_t n;
+
+    union {
+        struct cmsghdr cm;
+        char control[CMSG_SPACE(sizeof(int))];
+    } control_un;
+    struct cmsghdr *cmptr;
+
+    msg.msg_control = control_un.control;
+    msg.msg_controllen = sizeof(control_un);
+
+    msg.msg_name = NULL;
+    msg.msg_namelen = 0;
+
+    iov[0].iov_base = ptr;
+    iov[0].iov_len = nbytes;
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
+
+    if ((n = recvmsg(fd, &msg, 0)) <= 0)
+        return n;
+
+    if ((cmptr = CMSG_FIRSTHDR(&msg)) != NULL
+        && cmptr->cmsg_len == CMSG_LEN(sizeof(int))) {
+        *recvfd = *((int *) CMSG_DATA(cmptr));
+    } else {
+        *recvfd = -1;   /* 没有传文件描述符 */
+    }
+
+    return n;
+}
+
 /* 子进程的主函数 */
 void child_main(int parent_sockfd, int child_num)
 {
@@ -87,9 +155,11 @@ int main()
 
         pid_t pid = fork();
         if (pid == 0) {                                 /* 子进程 */
+            close(sockfd[0]);
             child_main(parent_sockfd, child_num);
             return 0;
         } else if (pid > 0) {                           /* 父进程 */
+            close(sockfd[1]);
             childs[i].pid = pid;
         } else {
             printf("fork child %d error,%s\n", i, strerror(errno));
@@ -147,7 +217,13 @@ int main()
         }
         for (int i=0; i<CHILDNUMBER; i++) {
             if (childs[i].is_use == 1 && childs[i].state == 0) {
-               //TODO...
+                char command = '1';     /* 发送数据为1表示是套接字描述符，0表示关闭当前子进程 */
+                /* 向空闲的子进程发送已连接套接字描述符 */
+                write_fd(childs[i].child_sock_fd, &command, 1, confd);
+                close(confd);
+                /* 更新这个子进程的状态 */
+                childs[i].state = 1;
+                childs_run_num++;
             }
         }
     }
