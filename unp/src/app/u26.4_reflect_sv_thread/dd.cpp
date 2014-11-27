@@ -7,27 +7,17 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <arpa/inet.h>
+#include <pthread.h>
+#include <stdlib.h>
 
 #define MAXLINE 1024
 
 char ip[] = "0.0.0.0";
 int port = 9999;
 
-int needprint = 0;
+int needprint = 1;
 
-//清除变成僵尸进程的子进程
-void clean_child(int signo)
-{
-    pid_t pid;
-    int stat;
-    while ((pid = waitpid(-1, &stat, WNOHANG)) > 0) {
-        if (needprint)
-            printf("child %d terminated\n", pid);
-    }
-    return;
-}
-
-//处理连接的具体事务
+/* 处理连接的具体事务 */
 void deal_socket(int sockfd)
 {
     char buf[MAXLINE];
@@ -41,14 +31,30 @@ again:
         goto again;
     else if (n < 0)
         printf("read error\n");
+   
+    close(sockfd);
+}
+
+/* 子线程处理函数 */
+void *child_thread_main(void *ptr)
+{
+    pthread_detach(pthread_self());
+    int recvfd, *p;
+    p = (int *)ptr;
+    recvfd = *p;
+    free(p);
+    if (needprint)
+        printf("thread %lld：get socket %d\n", (long long)pthread_self(), recvfd);
+
+    deal_socket(recvfd);
+    if (needprint)
+        printf("thread %lld：close socket %d\n", (long long)pthread_self(), recvfd);
+    return NULL;
 }
 
 int main()
 {
-    //绑定SIGCHLD信号的处理函数
-    signal(SIGCHLD, clean_child);
-
-    int listenfd, confd;
+    int listenfd;
 
     struct sockaddr_in svaddr;
     svaddr.sin_family = AF_INET;
@@ -77,33 +83,27 @@ int main()
         return 0;
     }
 
-    pid_t pid;
     struct sockaddr_in cliaddr;
     socklen_t len;
     len = sizeof(cliaddr);
+    int *confd;
     for (;;) {
-        confd = accept(listenfd, (struct sockaddr *)&cliaddr, &len);
-        //如果阻塞过程中被信号中断，某些系统可能会返回一个EINTR错误而不是重启accept
-        if (confd < 0 && errno == EINTR) {
+        confd = (int *)malloc(sizeof(int));
+        *confd = accept(listenfd, (struct sockaddr *)&cliaddr, &len);
+        /* 如果阻塞过程中被信号中断，某些系统可能会返回一个EINTR错误而不是重启accept */
+        if (*confd < 0 && errno == EINTR) {
+            free(confd);
             continue;
-        } else if (confd < 0) {
+        } else if (*confd < 0) {
             printf("accept error,%s\n", strerror(errno));
             return 0;
         }
+        
+        if (needprint)
+            printf("main:accept socket %d\n", *confd);
 
-        pid = fork();
-        //子进程
-        if (pid == 0) {
-            close(listenfd);
-            deal_socket(confd);
-            close(confd);
-            return 0;
-        } else if (pid > 0) {
-        //父进程
-            close(confd);
-        } else {
-            printf("fork error\n");
-        }
+        pthread_t tid;
+        pthread_create(&tid, NULL, child_thread_main, confd);
     }
     return 0;
 }
