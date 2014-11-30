@@ -7,6 +7,8 @@
 #define MAX_PRODUCT 200000
 #define THREADS_NUM 10
 
+int i;
+
 /* 临界区数据 */
 typedef struct
 {
@@ -41,7 +43,15 @@ void *produce(void *ptr)
 void *consume(void *ptr)
 {   
     printf("check...\n");
-    for (int i=0; i<MAX_PRODUCT; i++) {
+    for (i=0; i<MAX_PRODUCT; i++) {
+        for (;;) {
+            //pthread_mutex_lock(&share_data.mutex);
+            if (i < share_data.next_val) {
+                //pthread_mutex_unlock(&share_data.mutex);
+                break;
+            }
+            //pthread_mutex_unlock(&share_data.mutex);
+        }
         if (share_data.buf[i] != i)
             printf("error: buf[%d] = %d\n", i, share_data.buf[i]);
     }
@@ -63,6 +73,10 @@ int main(int argc, char **argv)
         pthread_create(&tid_p[i], NULL, produce, &count[i]);
     }
 
+    /* 创建消费者线程 */
+    pthread_t tid_c;
+    pthread_create(&tid_c, NULL, consume, NULL);
+
     int sum = 0;
     for (int i=0; i<THREADS_NUM; i++) {
         pthread_join(tid_p[i], NULL);
@@ -70,11 +84,9 @@ int main(int argc, char **argv)
         sum += count[i];
     }
     printf("sum = %d\n", sum);
+    printf("nput = %d,next_val = %d\n", share_data.nput, share_data.next_val);
+    printf("i = %d\n", i);
 
-    /* 创建消费者线程 */
-    pthread_t tid_c;
-    pthread_create(&tid_c, NULL, consume, NULL);
     pthread_join(tid_c, NULL);
-
     return 0;
 }
