@@ -45,12 +45,12 @@ void *consume(void *ptr)
     printf("check...\n");
     for (i=0; i<MAX_PRODUCT; i++) {
         for (;;) {
-            //pthread_mutex_lock(&share_data.mutex);
+            pthread_mutex_lock(&share_data.mutex);
             if (i < share_data.next_val) {
-                //pthread_mutex_unlock(&share_data.mutex);
+                pthread_mutex_unlock(&share_data.mutex);
                 break;
             }
-            //pthread_mutex_unlock(&share_data.mutex);
+            pthread_mutex_unlock(&share_data.mutex);
         }
         if (share_data.buf[i] != i)
             printf("error: buf[%d] = %d\n", i, share_data.buf[i]);
