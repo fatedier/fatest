@@ -4,7 +4,7 @@
 #include <pthread.h>
 #include <unistd.h>
 
-#define MAX_PRODUCT 200000
+#define MAX_PRODUCT 200000000
 #define THREADS_NUM 10
 
 int i;
@@ -13,12 +13,13 @@ int i;
 typedef struct
 {
     pthread_mutex_t mutex;
+    pthread_cond_t cond;
     int buf[MAX_PRODUCT];
     int nput;
     int next_val;
 } share_t;
 
-share_t share_data = {PTHREAD_MUTEX_INITIALIZER};
+share_t share_data = {PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER};
 
 /* 生产者线程 */
 void *produce(void *ptr)
@@ -33,6 +34,7 @@ void *produce(void *ptr)
         share_data.buf[share_data.next_val] = share_data.nput;
         share_data.next_val++;
         share_data.nput++;
+        pthread_cond_signal(&share_data.cond);
         pthread_mutex_unlock(&share_data.mutex);
 
         *(int *)ptr += 1;
@@ -44,16 +46,16 @@ void *consume(void *ptr)
 {   
     printf("check...\n");
     for (i=0; i<MAX_PRODUCT; i++) {
-        for (;;) {
-            pthread_mutex_lock(&share_data.mutex);
-            if (i < share_data.next_val) {
-                pthread_mutex_unlock(&share_data.mutex);
-                break;
-            }
+        pthread_mutex_lock(&share_data.mutex);
+
+        if (i == share_data.next_val)
+            pthread_cond_wait(&share_data.cond, &share_data.mutex);
+
+        if (i < share_data.next_val) {
             pthread_mutex_unlock(&share_data.mutex);
+            if (share_data.buf[i] != i)
+                printf("error: buf[%d] = %d\n", i, share_data.buf[i]);
         }
-        if (share_data.buf[i] != i)
-            printf("error: buf[%d] = %d\n", i, share_data.buf[i]);
     }
     return NULL;
 }
@@ -67,15 +69,15 @@ int main(int argc, char **argv)
     for (int i=0; i<THREADS_NUM; i++)
         count[i] = 0;
 
+    /* 创建消费者线程 */
+    pthread_t tid_c;
+    pthread_create(&tid_c, NULL, consume, NULL);
+
     /* 创建生产者线程 */
     pthread_t tid_p[THREADS_NUM];
     for (int i=0; i<THREADS_NUM; i++) {
         pthread_create(&tid_p[i], NULL, produce, &count[i]);
     }
-
-    /* 创建消费者线程 */
-    pthread_t tid_c;
-    pthread_create(&tid_c, NULL, consume, NULL);
 
     int sum = 0;
     for (int i=0; i<THREADS_NUM; i++) {
