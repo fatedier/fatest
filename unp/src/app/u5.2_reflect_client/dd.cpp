@@ -9,7 +9,7 @@
 #include <sys/select.h>
 
 #define MAXLINE 1024
-#define CLIENTNUM 1000
+#define CLIENTNUM 1
 
 char ip[] = "127.0.0.1";
 int port = 9999;
