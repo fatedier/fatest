@@ -80,13 +80,14 @@ void AvlTree::print_tree_loop(AvlTreeNode *node)
         return;
 
     print_tree_loop(node->left);
-    printf("%d ", node->data);
+    printf("%d %d\n", node->data, node->balance);
     print_tree_loop(node->right);
     return;
 }
 
 int AvlTree::insert_loop(AvlTreeNode **node, int data, int *taller)
 {
+    int result;
     if (*node == NULL)
     {
         *node = create_node(*node, data);
@@ -97,7 +98,7 @@ int AvlTree::insert_loop(AvlTreeNode **node, int data, int *taller)
 
     if (data >= (*node)->data)
     {
-        insert_loop(&(*node)->right, data, taller);
+        result = insert_loop(&(*node)->right, data, taller);
         if (*taller != 0)
         {
             switch ((*node)->balance)
@@ -117,11 +118,67 @@ int AvlTree::insert_loop(AvlTreeNode **node, int data, int *taller)
     }
     else if (data < (*node)->data)
     {
-        insert_loop(&(*node)->left, data, taller);
+        result = insert_loop(&(*node)->left, data, taller);
+        if (*taller != 0)
+        {
+            switch ((*node)->balance)
+            {
+                case -1:
+                    left_balance_when_insert(node, taller);
+                    break;
+                case 0:
+                    (*node)->balance = -1;
+                    break;
+                case 1:
+                    (*node)->balance = 0;
+                    *taller = 0;
+                    break;
+            }
+        }
     }
     else
     {
         return -2;
+    }
+    return result;
+}
+
+int AvlTree::left_balance_when_insert(AvlTreeNode **node, int *taller)
+{
+    AvlTreeNode *leftsub;
+    AvlTreeNode *next_rightsub;
+
+    leftsub = (*node)->left;
+    switch (leftsub->balance)
+    {
+        case 1:
+            next_rightsub = leftsub->right;
+            switch (next_rightsub->balance)
+            {
+                case -1:
+                    (*node)->balance = 1;
+                    (*node)->left->balance = 0;
+                    break;
+                case 0:
+                    (*node)->balance = 0;
+                    (*node)->left->balance = 0;
+                    break;
+                case 1:
+                    (*node)->balance = 0;
+                    (*node)->left->balance = -1;
+                    break;
+            }
+            next_rightsub->balance = 0;
+            rotate_left(&(*node)->left);
+            rotate_right(node);
+            *taller = 0;
+            break;
+        case -1:
+            leftsub->balance = 0;
+            (*node)->balance = 0;
+            rotate_right(node);
+            *taller = 0;
+            break;
     }
     return 0;
 }
@@ -129,19 +186,41 @@ int AvlTree::insert_loop(AvlTreeNode **node, int data, int *taller)
 int AvlTree::right_balance_when_insert(AvlTreeNode **node, int *taller)
 {
     AvlTreeNode *rightsub;
+    AvlTreeNode *next_leftsub;
 
     rightsub = (*node)->right;
     switch (rightsub->balance)
     {
         case -1:
-            
-        case 1:
+            next_leftsub = rightsub->left;
+            switch (next_leftsub->balance)
+            {
+                case -1:
+                    (*node)->balance = 0;
+                    (*node)->right->balance = 1;
+                    break;
+                case 0:
+                    (*node)->balance = 0;
+                    (*node)->right->balance = 0;
+                    break;
+                case 1:
+                    (*node)->balance = -1;
+                    (*node)->right->balance = 0;
+                    break;
+            }
+            next_leftsub->balance = 0;
+            rotate_right(&(*node)->right);
             rotate_left(node);
             *taller = 0;
+            break;
+        case 1:
             rightsub->balance = 0;
-            *node->balance = 0;
+            (*node)->balance = 0;
+            rotate_left(node);
+            *taller = 0;
             break;
     }
+    return 0;
 }
 
 void AvlTree::rotate_left(AvlTreeNode **node)

@@ -23,6 +23,7 @@ private:
     void print_tree_loop(AvlTreeNode *node);
     int insert_loop(AvlTreeNode **node, int data, int *taller);
     
+    int left_balance_when_insert(AvlTreeNode **node, int *taller);
     int right_balance_when_insert(AvlTreeNode **node, int *taller);
     
     void rotate_left(AvlTreeNode **node);
