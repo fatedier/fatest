@@ -6,28 +6,17 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-    AvlTree avl;
-    avl.insert(5);
+    int a[5] = {5, 20, 14, 2, 1};
 
-    avl.print_tree();
-    printf("\n");
+    AvlTree t;
+    for (int i=0; i<5; i++)
+    {
+        t.insert(a[i]);
+        t.print_tree();
+        printf("\n");
+    }
 
-    avl.insert(20);
-
-    avl.print_tree();
-    printf("\n");
-
-    avl.insert(14);
-    avl.print_tree();
-    printf("\n");
-    
-    avl.insert(2);
-
-    avl.print_tree();
-    printf("\n");
-
-    avl.insert(1);
-    avl.print_tree();
-    printf("\n");
+    cout << t.find(20) << endl;
+    cout << t.find(11) << endl;
     return 0;
 }

@@ -31,6 +31,40 @@ int AvlTree::insert(int data)
     return result;
 }
 
+int AvlTree::del(int data)
+{
+    int result = 0;
+    if (root == NULL)
+    {
+        return -1;
+    }
+
+    int shorter = 0;
+    result = delete_loop(&root, data, &shorter, NULL);
+    return result;
+}
+
+int AvlTree::find(int data)
+{
+    if (root == NULL)
+    {
+        return -1;
+    }
+    
+    AvlTreeNode *node = root;
+    while (node != NULL)
+    {   
+        if (data == node->data)
+            return 0;
+            
+        if (data > node->data)
+            node = node->right;
+        else
+            node = node->left;
+    }
+    return -1;
+}
+
 void AvlTree::destroy(AvlTreeNode *node)
 {
     if (node == NULL)
@@ -96,7 +130,7 @@ int AvlTree::insert_loop(AvlTreeNode **node, int data, int *taller)
         return 0;
     }
 
-    if (data >= (*node)->data)
+    if (data > (*node)->data)
     {
         result = insert_loop(&(*node)->right, data, taller);
         if (*taller != 0)
@@ -111,12 +145,12 @@ int AvlTree::insert_loop(AvlTreeNode **node, int data, int *taller)
                     (*node)->balance = 1;
                     break;
                 case 1:
-                    right_balance_when_insert(node, taller);
+                    right_balance(node, taller, true);
                     break;
             }
         }
     }
-    else if (data < (*node)->data)
+    else if (data <= (*node)->data)
     {
         result = insert_loop(&(*node)->left, data, taller);
         if (*taller != 0)
@@ -124,7 +158,7 @@ int AvlTree::insert_loop(AvlTreeNode **node, int data, int *taller)
             switch ((*node)->balance)
             {
                 case -1:
-                    left_balance_when_insert(node, taller);
+                    left_balance(node, taller, true);
                     break;
                 case 0:
                     (*node)->balance = -1;
@@ -143,7 +177,114 @@ int AvlTree::insert_loop(AvlTreeNode **node, int data, int *taller)
     return result;
 }
 
-int AvlTree::left_balance_when_insert(AvlTreeNode **node, int *taller)
+int AvlTree::delete_loop(AvlTreeNode **node, int data, int *shorter, AvlTreeNode *delete_node)
+{
+    int result = 0;
+    if (delete_node != NULL)
+    {
+        if ((*node)->right == NULL)
+        {
+            delete_node->data = (*node)->data;
+            AvlTreeNode *leftsub = (*node)->left;
+            free(*node);
+            *node = leftsub;
+            *shorter = 1;
+            return 0;
+        }
+    }
+    else
+    {
+        if (data > (*node)->data)
+        {
+            if ((*node)->right == NULL)
+            {
+                return -1;
+            }
+            result = delete_loop(&(*node)->right, data, shorter, delete_node);
+            if (*shorter != 0)
+            {
+                switch ((*node)->balance)
+                {
+                    case -1:
+                        left_balance(node, shorter, false);
+                        break;
+                    case 0:
+                        (*node)->balance = -1;
+                        *shorter = 0;
+                        break;
+                    case 1:
+                        (*node)->balance = 0;
+                        break;
+                }
+            }
+        }
+        else if (data < (*node)->data)
+        {
+            if ((*node)->left == NULL)
+            {
+                return -1;
+            }
+            result = delete_loop(&(*node)->left, data, shorter, delete_node);
+            if (*shorter != 0)
+            {
+                switch ((*node)->balance)
+                {
+                    case -1:
+                        (*node)->balance = 0;
+                        break;
+                    case 0:
+                        (*node)->balance = 1;
+                        *shorter = 0;
+                        break;
+                    case 1:
+                        right_balance(node, shorter, false);
+                        break;
+                }
+            }
+        }
+        else
+        {
+            AvlTreeNode *left = (*node)->left;
+            AvlTreeNode *right = (*node)->right;
+            if ((*node)->left == NULL)
+            {
+                free(*node);
+                *node = right;
+            }
+            else if ((*node)->right == NULL)
+            {
+                free(*node);
+                *node = left;
+            }
+            else
+            {
+                delete_loop(&(*node)->left, data, shorter, *node);
+                if (*shorter != 0)
+                {
+                    switch ((*node)->balance)
+                    {
+                        case -1:
+                            (*node)->balance = 0;
+                            break;
+                        case 0:
+                            (*node)->balance = -1;
+                            *shorter = 0;
+                            break;
+                        case 1:
+                            right_balance(node, shorter, false);
+                            break;
+                    }
+                }
+                return 0;
+            }
+            *shorter = 1;
+            return 0;
+        }
+    }
+    return result;
+}
+
+int AvlTree::left_balance(AvlTreeNode **node, int *taller, bool is_insert)
 {
     AvlTreeNode *leftsub;
     AvlTreeNode *next_rightsub;
@@ -171,19 +312,33 @@ int AvlTree::left_balance_when_insert(AvlTreeNode **node, int *taller)
             next_rightsub->balance = 0;
             rotate_left(&(*node)->left);
             rotate_right(node);
-            *taller = 0;
+            if (is_insert)
+            {
+                *taller = 0;
+            }
+            break;
+        case 0:
+            if (!is_insert)
+            {
+                leftsub->balance = 1;
+                rotate_right(node);
+                *taller = 0;
+            }
             break;
         case -1:
             leftsub->balance = 0;
             (*node)->balance = 0;
             rotate_right(node);
-            *taller = 0;
+            if (is_insert)
+            {
+                *taller = 0;
+            }
             break;
     }
     return 0;
 }
 
-int AvlTree::right_balance_when_insert(AvlTreeNode **node, int *taller)
+int AvlTree::right_balance(AvlTreeNode **node, int *taller, bool is_insert)
 {
     AvlTreeNode *rightsub;
     AvlTreeNode *next_leftsub;
@@ -211,13 +366,27 @@ int AvlTree::right_balance_when_insert(AvlTreeNode **node, int *taller)
             next_leftsub->balance = 0;
             rotate_right(&(*node)->right);
             rotate_left(node);
-            *taller = 0;
+            if (is_insert)
+            {
+                *taller = 0;
+            }
+            break;
+        case 0:
+            if (!is_insert)
+            {
+                rightsub->balance = -1;
+                rotate_left(node);
+                *taller = 0;
+            }
             break;
         case 1:
             rightsub->balance = 0;
             (*node)->balance = 0;
             rotate_left(node);
-            *taller = 0;
+            if (is_insert)
+            {
+                *taller = 0;
+            }
             break;
     }
     return 0;
