@@ -20,6 +20,10 @@ struct Rb_tree_node
                    color(0) {}
 };
 
+/*
+ * RbTree is a special balance binary tree
+ * key and data are needed when insert and key mustn't be repeated
+ */
 template <typename T1, typename T2>
 class RbTree
 {
@@ -34,20 +38,33 @@ public:
     int insert(const T1 &key, const T2 &data);
     
     /*
+     * remove a node from rb_tree by key
+     * return -1 when the key isn't exist,else return 0
+     */
+    int remove(const T1 &key);
+    
+    /*
      * find data by key
      * if success, return 0 else -1
      */
-    int find_by_key(const T1 &key, T2 &data);
+    int find(const T1 &key, T2 &data);
 
 private:
     /*
-     * create a red Rb_tree_node
+     * create a new red Rb_tree_node
      */
     Rb_tree_node<T1, T2> *create_node(Rb_tree_node<T1, T2> *node, const T1 &key, const T2 &data);
+    Rb_tree_node<T1, T2> *get_minimum_from_subtree(Rb_tree_node<T1, T2> *tree);
     void left_rotate(Rb_tree_node<T1, T2> *node);
     void right_rotate(Rb_tree_node<T1, T2> *node);
     void destroy_loop(Rb_tree_node<T1, T2> *node);
+    /*
+     * transplant src node to the position of dest node
+     * original node isn't freed in this function
+     */
+    void rb_transplant(Rb_tree_node<T1, T2> *dest, Rb_tree_node<T1, T2> *src);
     void rb_insert_fix(Rb_tree_node<T1, T2> *insert);
+    void rb_remove_fix(Rb_tree_node<T1, T2> *replace);
 
 private:
     Rb_tree_node<T1, T2> *root;
@@ -56,7 +73,7 @@ private:
 
 
 /* 
- * function realize
+ * realized functions
  */
 template <typename T1, typename T2>
 RbTree<T1, T2>::
@@ -119,13 +136,94 @@ insert(const T1 &key, const T2 &data)
 }
 
 /*
+ * remove a node from rb_tree by key
+ * return -1 when the key isn't exist,else return 0
+ */
+template <typename T1, typename T2>
+int 
+RbTree<T1, T2>::
+remove(const T1 &key)
+{
+    Rb_tree_node<T1, T2> *p_remove = root;
+    
+    /* if there are zero nodes */
+    if (p_remove == sentinel)
+        return -1;
+        
+    while (p_remove != sentinel)
+    {
+        if (key > p_remove->key)
+            p_remove = p_remove->right;
+        else if (key < p_remove->key)
+            p_remove = p_remove->left;
+        else
+            break;
+    }
+    
+    /* if remove-node isn't exist */
+    if (p_remove == sentinel)
+        return -1;
+    
+    /* keep the remove-node's color */
+    char original_color = p_remove->color;
+    
+    Rb_tree_node<T1, T2> *p_real_del = sentinel;    /* 
+                                                     * if remove-node has two childs, 
+                                                     * real-delete-node is minimum node of 
+                                                     * remove-node's right subtree
+                                                     */
+    Rb_tree_node<T1, T2> *p_replace = sentinel;     /* the node is the right child of removed node */
+    
+    /* if has one child, just replace p_remove with its child */
+    if (p_remove->left == sentinel)
+    {
+        p_replace = p_remove->right;
+        rb_transplant(p_remove, p_remove->right);
+    }
+    else if (p_remove->right == sentinel)
+    {
+        p_replace = p_remove->left;
+        rb_transplant(p_remove, p_remove->left);
+    }
+    /* if has two childs, choose the minimum node in right subtree to replace */
+    else
+    {
+        p_real_del = get_minimum_from_subtree(p_remove->right);
+        original_color = p_real_del->color;
+        p_replace = p_real_del->right;
+        
+        if (p_real_del->parent == p_remove)
+        {
+            p_replace->parent = p_real_del;
+        }
+        else
+        {
+            rb_transplant(p_real_del, p_real_del->right);
+            p_real_del->right = p_remove->right;
+            p_real_del->right->parent = p_real_del;
+        }
+           
+        rb_transplant(p_remove, p_real_del);
+        p_real_del->left = p_remove->left;
+        p_real_del->left->parent = p_real_del;
+        p_real_del->color = p_remove->color;
+    }
+    
+    delete p_remove;
+    
+    if (original_color == 1)
+        rb_remove_fix(p_replace);
+    return 0;
+}
+
+/*
  * find data by key
  * if success, return 0 else -1
  */
 template <typename T1, typename T2>
 int 
 RbTree<T1, T2>::
-find_by_key(const T1 &key, T2 &data)
+find(const T1 &key, T2 &data)
 {
     if (root == sentinel)
     {
@@ -164,6 +262,21 @@ create_node(Rb_tree_node<T1, T2> *node, const T1 &key, const T2 &data)
     node->right = sentinel;
     node->parent = sentinel;
     return node;
+}
+
+template <typename T1, typename T2>
+Rb_tree_node<T1, T2> *
+RbTree<T1, T2>::
+get_minimum_from_subtree(Rb_tree_node<T1, T2> *tree)
+{
+    Rb_tree_node<T1, T2> *p_search = tree;
+    Rb_tree_node<T1, T2> *p_minimum = sentinel;
+    while (p_search != sentinel)
+    {
+        p_minimum = p_search;
+        p_search = p_search->left;
+    }
+    return p_minimum;
 }
 
 template <typename T1, typename T2>
@@ -229,6 +342,26 @@ destroy_loop(Rb_tree_node<T1, T2> *node)
     return;
 }
 
+/*
+ * transplant src node to the position of dest node
+ * original node isn't freed in this function
+ */
+ template <typename T1, typename T2>
+void 
+RbTree<T1, T2>::
+rb_transplant(Rb_tree_node<T1, T2> *dest, Rb_tree_node<T1, T2> *src)
+{
+    if (dest.parent == sentinel)
+        root = src;
+    else if (dest == dest->parent->left)
+        dest->parent->left = src;
+    else
+        dest->parent->right = src;
+    
+    src->parent = dest->parent;
+    return;
+}
+
 template <typename T1, typename T2>
 void
 RbTree<T1, T2>::
@@ -291,6 +424,15 @@ rb_insert_fix(Rb_tree_node<T1, T2> *insert)
         }
     }
     root->color = 1;
+}
+
+template <typename T1, typename T2>
+void
+RbTree<T1, T2>::
+rb_remove_fix(Rb_tree_node<T1, T2> *replace)
+{
+    
+    return;
 }
 
 #endif /* _RB_TREE_H_ */
