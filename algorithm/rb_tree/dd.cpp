@@ -9,6 +9,10 @@ int main()
     rb.insert(1, "www");
     rb.insert(2, "wcl");
     rb.insert(3, "test");
+    
+    rb.remove(1);
+    rb.remove(2);
+
     string a;
     rb.find(1, a);
     cout << a << endl;
@@ -18,6 +22,7 @@ int main()
     cout << a << endl;
     if (rb.find(4, a) == 0)
         cout << a << endl;
+        
 
     return 0;
 }

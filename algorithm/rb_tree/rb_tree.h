@@ -351,7 +351,7 @@ void
 RbTree<T1, T2>::
 rb_transplant(Rb_tree_node<T1, T2> *dest, Rb_tree_node<T1, T2> *src)
 {
-    if (dest.parent == sentinel)
+    if (dest->parent == sentinel)
         root = src;
     else if (dest == dest->parent->left)
         dest->parent->left = src;
@@ -431,7 +431,84 @@ void
 RbTree<T1, T2>::
 rb_remove_fix(Rb_tree_node<T1, T2> *replace)
 {
+    Rb_tree_node<T1, T2> *brother = sentinel;
     
+    while (replace != root and replace->color == 1)
+    {
+        if (replace == replace->parent->left)
+        {
+            brother = replace->parent->right;
+            /* case 1 */
+            if (brother->color == 0)
+            {
+                brother->color = 1;
+                replace->parent->color = 0;
+                left_rotate(replace->parent);
+                brother = replace->parent->right;
+            }
+            /* case 2 */
+            if (brother->left->color == 1 && brother->right->color == 1)
+            {
+                brother->color = 0;
+                replace = replace->parent;
+            }
+            /* case 3 */
+            else if (brother->right->color == 1)
+            {
+                brother->left->color = 1;
+                brother->color = 0;
+                right_rotate(brother);
+                brother = replace->parent->right;
+            }
+            /* case 4 */
+            else
+            {
+                brother->color = replace->parent->color;
+                replace->parent->color = 1;
+                brother->right->color = 1;
+                left_rotate(replace->parent);
+                replace = root;
+            }
+        }
+        /* almost same with left case, just exchange "left" and "right" */
+        else
+        {
+            brother = replace->parent->left;
+            /* case 1 */
+            if (brother->color == 0)
+            {
+                brother->color = 1;
+                replace->parent->color = 0;
+                right_rotate(replace->parent);
+                brother = replace->parent->left;
+            }
+            /* case 2 */
+            if (brother->right->color == 1 && brother->left->color == 1)
+            {
+                brother->color = 0;
+                replace = replace->parent;
+            }
+            /* case 3 */
+            else if (brother->left->color == 1)
+            {
+                brother->right->color = 1;
+                brother->color = 0;
+                right_rotate(brother);
+                brother = replace->parent->left;
+            }
+            /* case 4 */
+            else
+            {
+                brother->color = replace->parent->color;
+                replace->parent->color = 1;
+                brother->left->color = 1;
+                left_rotate(replace->parent);
+                replace = root;
+            }
+        }
+    }
+    
+    replace->color = 1;
     return;
 }
 
