@@ -48,6 +48,11 @@ public:
      * if success, return 0 else -1
      */
     int find(const T1 &key, T2 &data);
+    
+    /* test
+    void print_tree();
+    void print_tree_loop(Rb_tree_node<T1, T2> *node);
+    */
 
 private:
     /*
@@ -65,7 +70,7 @@ private:
     void rb_transplant(Rb_tree_node<T1, T2> *dest, Rb_tree_node<T1, T2> *src);
     void rb_insert_fix(Rb_tree_node<T1, T2> *insert);
     void rb_remove_fix(Rb_tree_node<T1, T2> *replace);
-
+    
 private:
     Rb_tree_node<T1, T2> *root;
     Rb_tree_node<T1, T2> *sentinel;
@@ -92,6 +97,39 @@ RbTree<T1, T2>::
     root = NULL;
     delete sentinel;
 }
+
+/* test
+template <typename T1, typename T2>
+void
+RbTree<T1, T2>::
+print_tree()
+{
+    print_tree_loop(root);
+    return;
+}
+
+template <typename T1, typename T2>
+void
+RbTree<T1, T2>::
+print_tree_loop(Rb_tree_node<T1, T2> *node)
+{
+    if (node == sentinel)
+        return;
+    
+    print_tree_loop(node->left);
+    cout << node->key << endl;
+    if (node->left != sentinel)
+    {
+        cout << " left:" << node->left->key << endl;
+    }
+    if (node->right != sentinel)
+    {
+        cout << " right:" << node->right->key << endl;
+    }
+    print_tree_loop(node->right);
+    return;
+}
+*/
 
 /*
  * insert a key-data node
@@ -130,8 +168,8 @@ insert(const T1 &key, const T2 &data)
         p_parent->left = p_insert;
     else
         p_parent->right = p_insert;
-        
-    
+
+    rb_insert_fix(p_insert);
     return 0;
 }
 
@@ -322,7 +360,7 @@ right_rotate(Rb_tree_node<T1, T2> *node)
     else
         node->parent->right = leftsub;
     
-    leftsub->left = node;
+    leftsub->right = node;
     node->parent = leftsub;
     return;
 }
@@ -412,18 +450,19 @@ rb_insert_fix(Rb_tree_node<T1, T2> *insert)
             else if (insert == insert->parent->left)
             {
                 insert = insert->parent;
-                left_rotate(insert);
+                right_rotate(insert);
             }
             /* case 3 */
             else
             {
                 insert->parent->color = 1;
                 insert->parent->parent->color = 0;
-                right_rotate(insert->parent->parent);
+                left_rotate(insert->parent->parent);
             }
         }
     }
     root->color = 1;
+    return;
 }
 
 template <typename T1, typename T2>
@@ -493,7 +532,7 @@ rb_remove_fix(Rb_tree_node<T1, T2> *replace)
             {
                 brother->right->color = 1;
                 brother->color = 0;
-                right_rotate(brother);
+                left_rotate(brother);
                 brother = replace->parent->left;
             }
             /* case 4 */
@@ -502,7 +541,7 @@ rb_remove_fix(Rb_tree_node<T1, T2> *replace)
                 brother->color = replace->parent->color;
                 replace->parent->color = 1;
                 brother->left->color = 1;
-                left_rotate(replace->parent);
+                right_rotate(replace->parent);
                 replace = root;
             }
         }

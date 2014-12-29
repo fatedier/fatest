@@ -1,28 +1,24 @@
 #include <iostream>
 #include <string>
+#include <time.h>
+#include <stdlib.h>
 #include "rb_tree.h"
 using namespace std;
 
+#define NUMBER 1000000
+
 int main()
 {
-    RbTree<int, string> rb;
-    rb.insert(1, "www");
-    rb.insert(2, "wcl");
-    rb.insert(3, "test");
+    RbTree<int, int> rb;
+    srand(time(NULL));
     
-    rb.remove(1);
-    rb.remove(2);
-
-    string a;
-    rb.find(1, a);
-    cout << a << endl;
-    rb.find(2, a);
-    cout << a << endl;
-    rb.find(3, a);
-    cout << a << endl;
-    if (rb.find(4, a) == 0)
-        cout << a << endl;
-        
+    
+    int num;
+    for (int i=0; i<NUMBER; i++)
+    {
+        num = rand() % (NUMBER * 10);
+        rb.insert(num, 0);
+    }
 
     return 0;
 }
