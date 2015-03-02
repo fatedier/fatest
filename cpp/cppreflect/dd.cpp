@@ -1,9 +1,7 @@
 #include <string>
-#include "reflect.h"
-#include "BaseBank.h"
+#include "BankFactory.h"
 #include "GSBank.h"
 #include "RMBank.h"
-#include<assert.h>
 using namespace std;
 
 int main(int argc, char **argv)
@@ -13,7 +11,8 @@ int main(int argc, char **argv)
         return 1;
     }
     string bank_name = argv[1];
-    BaseBank* t = (BaseBank*)Class::newInstance(bank_name);
+    BankFactory bf;
+    BaseBank* t = (BaseBank*)bf.createBank(bank_name);
     if (t == NULL) {
         cout << "银行编码错误！" << endl;
         return 2;
