@@ -14,56 +14,53 @@ typedef char bool;
 #define false 0
 #endif
 
-void quick_sort(int a[], int left, int right)
+void swap(int *a, int *b)
 {
-    if (right <= left)
+    if (a == b)
         return;
+    *a = (*a) ^ (*b);
+    *b = (*a) ^ (*b);
+    *a = (*a) ^ (*b);
+}
 
-    int p_left = left;
-    int p_right = right;
-    int p_mid = (p_left + p_right) / 2;
-    int temp;
-    
-    bool is_left = true;
+int random_in_range(int start, int end)
+{
+    return rand() % (end - start + 1) + start;
+}
 
-    while (p_left != p_right) {
-        if (is_left == true) {
-            if (a[p_left] > a[p_mid]) {
-                temp = a[p_mid];
-                a[p_mid] = a[p_left];
-                a[p_left] = temp;
-                p_mid = p_left;
-                is_left = false;
-                continue;
-            } else {
-                if (p_left == p_mid) {
-                    is_left = false;
-                    continue;
-                }
-                p_left++;
-                continue;
-            }
-        } else {
-            if (a[p_right] < a[p_mid]) {
-                temp = a[p_mid];
-                a[p_mid] = a[p_right];
-                a[p_right] = temp;
-                p_mid = p_right;
-                is_left = true;
-                continue;
-            } else {
-                if (p_right == p_mid) {
-                    is_left = true;
-                    continue;
-                }
-                p_right--;
-                continue;
-            }
+int sort_one(int a[], int length, int left, int right)
+{
+    if (a == NULL || length <= 0 || left < 0 || right >= length) {
+        return -1;  /* error */
+    }
+    int index = random_in_range(left, right);
+    swap(&a[index], &a[right]);
+    int small = left - 1;
+
+    for (index = left; index < right; index++) {
+        if (a[index] < a[right]) {
+            small++;
+            if (small != index)
+                swap(&a[small], &a[index]);
         }
     }
+    small++;
+    swap(&a[small], &a[right]);
+    return small;
+}
 
-    quick_sort(a, left, p_mid - 1);
-    quick_sort(a, p_mid + 1, right);
+void quick_sort(int a[], int length, int left, int right)
+{
+    if (left == right)
+        return;
+
+    int index = sort_one(a, length, left, right);
+    if (index < 0) /* error */
+        return;
+    if (index > left)
+        quick_sort(a, length, left, index - 1);
+    if (index < right)
+        quick_sort(a, length, index + 1, right);
 }
 
 int main(int argc, char **argv)
@@ -77,11 +74,11 @@ int main(int argc, char **argv)
     }
     printf("\n");
 
-    quick_sort(a, 0, NUMBER - 1);
+    quick_sort(a, NUMBER, 0, NUMBER - 1);
+
     for (i=0; i<NUMBER; i++) {
         printf("%d ", a[i]);
     }
     printf("\n");
-
     return 0;
 }
