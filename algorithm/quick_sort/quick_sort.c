@@ -1,10 +1,9 @@
-#include <string.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <time.h>
 
-#define NUMBER 50
+#define NUMBER 20
 #define RANDMIN 0
 #define RANDMAX 1000
 
