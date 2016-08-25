@@ -19,7 +19,7 @@ void swap(int *a, int *b)
 void quick_sort2(int a[], int left, int right) {
     if (left >= right)
         return;
-    int pos = (left - right) / 2 + right;
+    int pos = left + (right - left) / 2;
     swap(&a[pos], &a[right]);
     int small = left - 1;
     for (int i=left; i<=right; i++) {
@@ -29,7 +29,7 @@ void quick_sort2(int a[], int left, int right) {
                 swap(&a[small], &a[i]);
         }
     }
-    pos = small + 1;
+    pos = small + 0;
     swap(&a[pos], &a[right]);
     quick_sort2(a, left, pos-1);
     quick_sort2(a, pos+1, right);
