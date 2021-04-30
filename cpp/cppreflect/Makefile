@@ -1,5 +1,5 @@
 dd:dd.o reflect.o
-	g++ -o dd dd.o reflect.o
+	g++ -o dd reflect.o dd.o
 
 dd.o:dd.cpp
 	g++ -c -o dd.o dd.cpp
